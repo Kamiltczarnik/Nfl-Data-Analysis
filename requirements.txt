@@ -1,0 +1,32 @@
+.
+├─ README.md
+├─ pyproject.toml / requirements.txt
+├─ src/
+│  ├─ data/
+│  │  ├─ readers.py          # nflreadpy wrappers, caching, schema checks
+│  │  ├─ transforms.py       # cleaning, ID maps, drive tables
+│  │  └─ overrides.py        # YAML/JSON loader & apply hooks
+│  ├─ features/
+│  │  ├─ rolling.py          # EPA/success/explosives windows
+│  │  ├─ strategy.py         # PROE/early-down pass rate
+│  │  ├─ qb.py               # EPA+CPOE composites, starter mapping
+│  │  ├─ trenches.py         # pressure proxies, optional ESPN scrape
+│  │  ├─ situational.py      # rest/travel/primetime/weather
+│  │  └─ assemble.py         # final modeling table builder
+│  ├─ models/
+│  │  ├─ baseline.py         # logistic regression + calibration
+│  │  ├─ gbm.py              # XGBoost/LightGBM training
+│  │  ├─ stack.py            # simple blender/stacker
+│  │  └─ calibrate.py        # isotonic/Platt fit & apply
+│  ├─ eval/
+│  │  ├─ metrics.py          # logloss, Brier, ECE, reliability curves
+│  │  ├─ backtest.py         # time-series CV harness
+│  │  └─ ablations.py        # feature family knockouts
+│  └─ serve/
+│     ├─ predict.py          # CLI entrypoint, loads overrides
+│     └─ explain.py          # SHAP drivers
+├─ data/                     # cached parquet + snapshots (gitignored)
+├─ configs/
+│  ├─ paths.yaml
+│  └─ features.yaml
+└─ overrides/                # YAML per week/game manual inputs

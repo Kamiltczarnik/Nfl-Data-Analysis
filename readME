@@ -1,0 +1,258 @@
+# 🏈 NFL Game Prediction Model
+
+**Goal:** Output calibrated **win probabilities (%)** for any NFL game using rich pre-game context (team strength, matchups, injuries, weather, market priors) and upset-aware features.
+
+---
+
+## ✅ Pre-flight Checklist (Conceptual)
+- Define **data footprint** (teams, players, matchups, markets, weather, injuries) and which source supplies each field.
+- Prefer **`nflreadpy`** (active) over `nfl_data_py` (deprecated) for schedules, PBP, weekly stats, rosters, injuries, snaps, depth charts, and IDs.
+- Build a robust **ETL → feature store** (weekly + in-week updates for injuries) with versioning and leakage guards.
+- Ship a **baseline logistic** (EPA + spread + home/rest) and an **ensemble** (GBM/XGBoost) with post-hoc **calibration**.
+- Implement **validation gates** (Brier/log-loss, calibration, sanity checks) after each integration.
+- Provide **manual overrides** (injury/weather/lineup) via YAML/JSON in the prediction interface.
+- Plan tight **iteration loops**: feature ablations, upset error analysis, drift monitoring, weekly refresh.
+
+---
+
+## 🔑 What Best Predicts Winning (Prioritized Signals)
+
+> Use these to guide feature importance and ablations. Source coverage notes included.
+
+1) **Efficiency per play (esp. passing)**
+- **Offensive EPA/play (pass >> run)** and **Defensive EPA/play allowed** are the strongest game-to-game indicators.
+- **Early-down EPA (pass)** is extra predictive (drives later 4th-down leverage).
+- **Success rate** (EPA > 0 share) is a variance-reduced cousin of EPA.
+- **Where**: `nflreadpy.import_pbp_data` → aggregate by team/game/segment; also in nflfastR releases.
+
+2) **Early-down pass rate & PROE (Pass Rate Over Expected)**
+- Coaching/identity metric; high signal for forward-looking offense strength.
+- **Where**: compute from PBP (regress pass probability on game state → actual − expected); RBSDM provides reference visuals.
+
+3) **Explosive plays & aDOT**
+- Explosive pass rate (e.g., ≥20 yds or EPA threshold) and **aDOT** complement EPA to capture verticality/chunk gains.
+- **Where**: PBP fields (`air_yards`, `yards_gained`) → compute rates.
+
+4) **QB quality composites (EPA + CPOE)**
+- Blend **QB EPA/play** with **CPOE** (completion % over expectation).
+- **Where**: PBP has completion probability `cp` → derive CPOE and aggregate by QB.
+
+5) **Pass protection & pressure (trenches)**
+- **Pressure rate allowed/created** + **time to throw** directly impact passing EPA.
+- **Where**: Best public proxies: ESPN **PBWR/PRWR** (tracking-based; proprietary but page tables are viewable/scrapable). PBP approximations via sacks/hits exist but are weaker.
+
+6) **Field position & finishing drives**
+- **Avg starting field position**, **points/drive**, **scores/drive**, **drive success rate** compress situational noise.
+- **Where**: Derive from PBP drive starts/results.
+
+7) **4th-down decision-making**
+- Aggressiveness vs. model optimal affects win prob on the margins (small lift, but real).
+- **Where**: PBP’s WP model → compute “went for it” vs. recommendation deltas.
+
+8) **Special Teams**
+- **ST DVOA** captures hidden field position/kicking value; season-level strength.
+- **Where**: FTN (subscription) or proxy via starting field position and kick results.
+
+9) **“Luck” & volatility controls**
+- **Turnover margin**, **fumble recovery %**, **3rd-down & RZ TD over expected** explain *what happened* but are noisy for *what will happen*. Use as regression-to-mean controls.
+- **Where**: compute from PBP; RBSDM “luck” views provide reference.
+
+### “Complex” Metrics That Add Predictive Lift
+- **EPA/WP models** (foundation; included in PBP).
+- **CPOE/Completion probability** (PBP `cp` enables CPOE derivation; NGS describes methodology).
+- **PROE** (strategy/identity; compute from PBP).
+- **Trench win rates** (PBWR/PRWR; scrape ESPN if desired).
+- **DVOA (Off/Def/ST)** (season-level team strength; FTN).
+- **Composite QB tiers** (EPA+CPOE, success+aDOT) outperforms box-score metrics.
+
+---
+
+## 🧱 Minimal High-Impact Feature Set (Pre-Game)
+- **Market priors**: closing `spread_line`, `total_line`, `moneyline` (schedules).
+- **Team strength**: rolling **Off EPA/play** (pass & run), **Def EPA/play allowed**, early-down splits, **success rate**, **explosive pass rate**.
+- **QB form**: last 4–6 games **EPA+CPOE**, **aDOT**.
+- **Trenches**: pressure allowed/created (or ESPN PBWR/PRWR if scraped).
+- **Special teams**: ST DVOA (if available) or proxies (avg starting field position).
+- **Situational**: penalty rate, **rest/travel/short week**, **injury counts/availability**.
+
+> **Live model** (optional): use nflfastR WP + current game EPA/success + drive stats + 4th-down decisions for in-game win prob.
+
+---
+
+## 📚 Data Sources & Package Coverage
+
+### Prefer `nflreadpy` (active) — mirrors nflfastR/nflverse data releases
+**Core readers**
+- **Play-by-play / weekly / seasonal**: `import_pbp_data`, `import_weekly_data`, `import_seasonal_data`, `see_pbp_cols`, `see_weekly_cols`
+- **Schedules (with markets)**: `import_schedules` → `spread_line`, `total_line`, `moneyline`
+- **Rosters/snaps/depth charts**: `import_seasonal_rosters`, `import_weekly_rosters`, `import_snap_counts`, `import_depth_charts`
+- **Injuries**: `import_injuries`
+- **IDs/Officials**: `import_ids`, `import_officials`
+- **Advanced**: `import_seasonal_pfr`, `import_weekly_pfr`, `import_qbr`, `import_ftn_data` (FTN charting subset)
+- **Maintenance**: `cache_pbp`, `clean_nfl_data`
+
+**Notes**
+- `nfl_data_py` is **deprecated**; keep for fallbacks only.
+- PBP already includes **EPA**, **WP**, **cp** (for **CPOE**), **air_yards**, **penalties**, clock, score, down/distance.
+
+### When You Need to Scrape/Stitch
+- **ESPN PBWR/PRWR/RSWR/RBWR**: scrape team tables by week/season; store keyed by `team`, `season`, `week`.
+- **NGS leaderboards** (time to throw, aggressiveness, separation): scrape if needed; otherwise omit.
+- **DVOA (FTN)**: ingest CSV exports if subscribed (unit-level O/D/ST + opponent adjustments).
+
+---
+
+## 🗃️ Data Dictionary (Modeling Table)
+
+**Grain:** one row per **game** per **team** (two rows per game), pre-game features only.
+
+| Column | Type | Description |
+|---|---:|---|
+| `game_id` | str | Unique game identifier (season_week_teams) |
+| `season`, `week` | int | Season and NFL week |
+| `team`, `opponent` | str | Abbrevs |
+| `home` | int | 1 if team is home (neutral site handled via `neutral` flag) |
+| `neutral` | int | Neutral site flag |
+| `spread_close`, `total_close`, `moneyline_close` | float | From schedules |
+| `off_epa_play_l3`, `def_epa_play_allowed_l3` | float | Rolling (last 3) |
+| `off_pass_epa_l3`, `off_run_epa_l3` | float | Rolling by phase |
+| `def_pass_epa_allowed_l3`, `def_run_epa_allowed_l3` | float | Rolling by phase |
+| `off_success_l3`, `def_success_allowed_l3` | float | Success rates |
+| `early_down_pass_epa_l3` | float | Early-down only |
+| `explosive_pass_rate_l5` | float | ≥20y or EPA threshold |
+| `proe_l5`, `early_down_pass_rate_l5` | float | Strategy metrics |
+| `qb_epa_cpoe_l6` | float | QB composite |
+| `adot_l5` | float | Air-yards depth |
+| `pressure_allowed_l5`, `pressure_created_l5` | float | PBP proxy or ESPN scrape |
+| `sack_rate_oe_l5` | float | Sacks over expected proxy |
+| `st_start_fp_l5` | float | Avg starting field position |
+| `points_per_drive_l5`, `scores_per_drive_l5` | float | Drive finishing |
+| `penalty_rate_l5` | float | Flags per play |
+| `rest_days` | int | Days since prior game |
+| `short_week` | int | Thu game after Sun/Mon flag |
+| `travel_dist_km` | float | From stadium geos (optional) |
+| `primetime` | int | Night game flag |
+| `roof`, `surface` | str | Dome/outdoor; turf/grass |
+| `wx_temp_f`, `wx_wind_mph`, `wx_precip` | float | Forecast at kickoff |
+| `inj_out_count`, `inj_q_count` | int | Injury counts (out/questionable) |
+| `ol_continuity_index` | float | % of prior week starters returned |
+| `turnover_luck_adj_l5` | float | Over-expected turnovers (regression flag) |
+| `label_win` | int | 1 if team won (for training only) |
+
+> **Leakage guard:** all rolling windows and priors computed using **games strictly before the prediction game**; market fields use **closing** lines from the same game (allowed for benchmarking/calibration but ensure they reflect *pre-kickoff* info only).
+
+---
+
+## 🧪 Feature Engineering Specs
+
+### Rolling Windows
+- Windows: **L3** (last 3), **L5** (last 5), and **exponentially weighted** (α=0.7) for recency.
+- Early-down filter: downs ∈ {1,2} and neutral game state (score within ±7, time Q1–Q3).
+
+### Success Rate
+- `success = 1 if EPA > 0 else 0` (pass/run and total); compute rates by window.
+
+### Explosive Rate
+- Pass explosive: share of pass plays with `yards_gained ≥ 20` **or** `EPA ≥ 0.6`.
+
+### PROE
+- Fit logistic model on pass probability using down, distance, yardline, time, score diff, etc.
+- `PROE = actual_pass_rate − expected_pass_prob` (game/team and early-down variants).
+
+### QB EPA+CPOE Composite
+- Aggregate **QB EPA/play** and **CPOE** (mean or z-scored blend) across recent starts.
+- Assign backup starts by depth chart/snap counts.
+
+### Pressure & Trenches
+- **PBP proxies**: pressure ≈ `(sacks + QB hits + hurries)/dropbacks` if available; else sack rate.
+- **Best**: ESPN PBWR/PRWR weekly tables if scraped; store as `pbwr_off`, `prwr_def`.
+
+### Finishing Drives
+- Compute per-drive **points**, **scores**, **start field position**, **drive success %**.
+
+### Injury Adjustments
+- Parse **`import_injuries`**: map `OUT/DOUBTFUL/QUESTIONABLE` + practice DNP/LP/FP to an **availability score** by position group; weighted sum (QB > OT > WR > CB > S > RB > LB > DT/DE > TE > FB).
+- **OL continuity**: % of prior starting OL who start this week (join depth charts + snap counts).
+
+### Weather
+- Join forecast (or manual override) to **wx_*** columns; for domes set `wx_wind_mph = 0`, no precip.
+
+---
+
+## 🤖 Modeling
+
+### Framing & Targets
+- Binary classification: `label_win` (home/away row split).
+- Optimize **log-loss**; report **Brier** and **calibration** (reliability curves, ECE).
+
+### Models
+- **Baseline**: Logistic regression on compact, high-signal features:  
+  `home`, `rest_days`, `off_epa_play_l3`, `def_epa_play_allowed_l3`, `early_down_pass_epa_l3`, `spread_close`.
+- **Ensemble**: Gradient Boosting (XGBoost/LightGBM) with the full feature set.
+- **Stacking** (optional): Blend logistic + GBM + a simple **Elo-like** EPA-aware team rating.
+
+### Calibration
+- Use **isotonic** (preferred) or **Platt** scaling on validation folds, targeting **closing moneyline-implied probabilities**.
+
+### Cross-Validation / Backtesting
+- **Time-series** folds by week (rolling origin). Final test on most recent seasons.
+- Benchmarks:  
+  - Market implied win prob,  
+  - Spread-only heuristic (convert spread to prob via normal model).
+
+---
+
+## 🎯 Prediction Algorithm
+
+**Inputs:**
+- Teams, date/time, site/home/neutral, depth chart/starters, injury designations, weather, market lines, manual overrides.
+
+**Process:**
+1. Assemble rolling + matchup features from the feature store.  
+2. Apply **manual overrides** (e.g., “QB OUT”, wind=25 mph) **before inference**.  
+3. Predict with ensemble → apply **calibration** → return probabilities.
+
+**Outputs:**
+- `team_win_prob`, `opp_win_prob` (sum to 1.00).  
+- **Top drivers** via SHAP values.  
+- **Upset alert** flags when favorite prob ∈ (0.55, 0.68) but mismatch features are extreme.
+
+---
+
+## 📊 Evaluation & Iteration
+
+**Primary metrics:** log-loss, Brier, ECE; **secondary:** AUROC (diagnostic), hit-rate on underdogs.  
+**Slices:** QB change weeks, severe weather (wind ≥ 15 mph), short week, long travel, OL continuity low (<60%).  
+**Ablations:** remove families (injury, weather, trenches, market priors) → measure delta in log-loss/Brier.
+
+**Goal thresholds**
+- **Baseline**: Brier ≤ **0.20**, calibration slope ≈ **1.0**.  
+- **Ensemble**: **2–3%** log-loss improvement over baseline; **ECE < 0.03**.  
+- **Vs market**: holdout Brier ≤ **market Brier + 0.005**.
+
+---
+
+## 🗄️ Data Management & Ops
+
+**Storage**
+- Lake: **Parquet** (partitioned by `season`/`week`),  
+- Feature store: **Postgres/SQLite** tables for fast joins and point-in-time retrieval.
+
+**Versioning**
+- Keep **raw snapshots** and **as_of** timestamps to reproduce any week.
+
+**Jobs**
+- **Weekly refresh**: schedules, weekly stats, PBP, rosters, injuries, snaps/depth.  
+- **In-week deltas**: injuries & depth charts Thu–Sun morning.  
+- **Health checks**: row counts, null ratios, expected keys, dome wind=0, opponent joins valid.
+
+**Manual Overrides**
+```yaml
+# overrides/week_06.yaml
+week: 6
+game_id: 2025_06_BAL_TEN
+overrides:
+  BAL.QB: "out"              # impacts qb_epa_cpoe_l6 and starter mapping
+  BAL.OL.LT: "out"           # reduces ol_continuity_index
+  weather.wind_mph: 22       # increases weather penalty on deep passing
+  schedule.spread_line: -1.5 # allow manual line edits if markets update
