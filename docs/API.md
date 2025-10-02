@@ -180,6 +180,34 @@ Currently, the API does not require authentication. In production, implement app
 
 ### Available Models
 - **GET** `/api/v1/predict/models` - List available prediction models
+  - Response:
+    ```json
+    {
+      "models": [
+        {
+          "name": "baseline",
+          "type": "logistic_regression",
+          "version": "1.0.0",
+          "accuracy": 0.625,
+          "log_loss": 0.68,
+          "roc_auc": 0.67,
+          "features": 42,
+          "last_trained": "2024-01-01T12:00:00Z"
+        },
+        {
+          "name": "neural_network",
+          "type": "multi_branch_deep_network",
+          "version": "1.0.0",
+          "accuracy": 0.675,
+          "log_loss": 0.62,
+          "roc_auc": 0.72,
+          "features": 42,
+          "architecture": "rolling_branch(64→32→16) + situational_branch(16→8) + combined(32→16→1)",
+          "last_trained": "2024-01-01T12:00:00Z"
+        }
+      ]
+    }
+    ```
 
 ### Feature Schema
 - **GET** `/api/v1/predict/features/schema` - Get feature schema for model inputs
@@ -433,6 +461,45 @@ curl -X POST "http://localhost:8000/api/v1/predict/features" \
     "opponent": "BUF"
   }'
 ```
+
+## Neural Network Models
+
+### Multi-Branch Deep Network Architecture
+
+The neural network model uses a sophisticated multi-branch architecture optimized for NFL predictions:
+
+#### Architecture Components
+
+1. **Rolling Features Branch** (36 features)
+   - Input: L3/L5/L6/EWMA windows for EPA and success rates
+   - Layers: Dense(64) → BatchNorm → Dropout(0.3) → Dense(32) → BatchNorm → Dropout(0.2) → Dense(16)
+   - Purpose: Capture complex time-series patterns and team performance trends
+
+2. **Situational Features Branch** (6 features)
+   - Input: Home field, rest days, spread, opponent metrics, strength of schedule
+   - Layers: Dense(16) → BatchNorm → Dropout(0.2) → Dense(8)
+   - Purpose: Process contextual and market information
+
+3. **Combined Processing**
+   - Input: Concatenated outputs from both branches (24 features)
+   - Layers: Dense(32) → BatchNorm → Dropout(0.3) → Dense(16) → BatchNorm → Dropout(0.2) → Dense(1)
+   - Output: Sigmoid activation for win probability
+   - Purpose: Learn complex interactions between rolling and situational features
+
+#### Performance Targets
+
+- **Accuracy**: 65-70% (vs 60-65% logistic regression baseline)
+- **Log-Loss**: <0.65 (vs 0.68-0.70 baseline)
+- **ROC-AUC**: >0.70 (vs 0.65-0.67 baseline)
+- **Calibration**: Better probability estimates than linear models
+
+#### Key Advantages
+
+1. **Non-Linear Relationships**: Captures complex feature interactions
+2. **Automatic Feature Learning**: Discovers important patterns automatically
+3. **Contextual Adaptation**: Different strategies for different game types
+4. **Rich Interactions**: Learns interactions between all 42 features
+5. **Temporal Patterns**: Better understanding of team performance trends
 
 ## Development
 

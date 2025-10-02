@@ -33,4 +33,21 @@
 - **Player identification**: `passer_player_id`, `receiver_player_id`, `rusher_player_id`, `sack_player_id`, `interception_player_id`, tackle players, pass defense players.
 - **Matchup data**: Air yards, pass location, yards gained, touchdowns, sacks, QB hits, interceptions for comprehensive matchup analysis.
 
+### Neural Network Model Artifacts
+
+- **Model file**: `models/neural_network.h5` (Keras/TensorFlow format)
+- **Scaler**: `models/neural_network_scaler.joblib` (StandardScaler for feature normalization)
+- **Feature columns**: `models/neural_network_features.joblib` (ordered list of 42 feature names)
+- **Architecture metadata**: `models/neural_network_metadata.json` (architecture details, hyperparameters, training metrics)
+- **Training metrics**: Log-loss, Brier score, ROC-AUC, accuracy, precision, recall, F1-score, calibration slope
+- **Feature importance**: SHAP values for interpretability (optional, computed on-demand)
+
+### Model Comparison Framework
+
+- **Baseline model**: Logistic regression (`models/baseline.joblib`)
+- **Neural network**: Multi-branch deep network (`models/neural_network.h5`)
+- **Ensemble model**: Gradient boosting (`models/gbm.joblib`)
+- **Stacked model**: Combined predictions (`models/stacked.joblib`)
+- **Performance tracking**: Model comparison metrics stored in `models/comparison_metrics.json`
+
 

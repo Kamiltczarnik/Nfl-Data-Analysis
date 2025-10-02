@@ -75,13 +75,20 @@ This document maps how modules interact, what each produces/consumes, and the ke
   - Inputs: modeling table; feature list from `configs/features.yaml`.
   - Outputs: serialized scaler/model (`models/baseline.joblib`), feature column order, metrics.
 
+- `src/models/neural_network.py`
+  - Purpose: Train multi-branch neural network with 42 features.
+  - Inputs: modeling table; rolling features (36), situational features (6).
+  - Outputs: serialized model (`models/neural_network.h5`), scaler, feature column order, metrics.
+  - Architecture: Rolling branch (64→32→16) + Situational branch (16→8) + Combined (32→16→1).
+  - Regularization: BatchNorm, Dropout (0.2-0.3), Early stopping, L2 weight decay.
+
 - `src/models/gbm.py`
   - Purpose: Train GBM/XGBoost/LightGBM ensemble.
   - Inputs: modeling table; extended feature set; CV folds.
   - Outputs: serialized booster, feature importance, CV metrics.
 
 - `src/models/stack.py`
-  - Purpose: Blend/stack baseline + GBM (+ optional Elo-like prior).
+  - Purpose: Blend/stack baseline + neural network + GBM (+ optional Elo-like prior).
   - Inputs: out-of-fold predictions from submodels; meta-features.
   - Outputs: stacked predictions and final model artifact.
 
@@ -138,6 +145,7 @@ This document maps how modules interact, what each produces/consumes, and the ke
 
 - Build data (weekly): readers → transforms → features → assemble modeling table.
 - Train baseline: fit logistic, save model + scaler + column order, report metrics.
+- Train neural network: fit multi-branch network, save model + scaler + column order, report metrics.
 - Train ensemble + calibrate: GBM/XGBoost, stacking, isotonic fit; save artifacts.
 - Predict: load latest features, apply overrides, run stack + calibration, output JSON/CSV with SHAP.
 

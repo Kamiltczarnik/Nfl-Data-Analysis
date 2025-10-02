@@ -417,3 +417,58 @@ weather:
   temp_cold: 32.0  # fahrenheit
   temp_hot: 85.0   # fahrenheit
   precip_heavy: 0.5  # inches
+
+# Model features for baseline logistic regression
+model_features:
+  baseline:
+    # Rolling features (L3 windows)
+    - "rolling_off_epa_play_l3"
+    - "rolling_def_epa_play_allowed_l3"
+    - "rolling_off_pass_epa_play_l3"
+    - "rolling_def_pass_epa_play_allowed_l3"
+    - "rolling_off_run_epa_play_l3"
+    - "rolling_def_run_epa_play_allowed_l3"
+    - "rolling_off_success_rate_l3"
+    - "rolling_def_success_rate_allowed_l3"
+    - "rolling_off_early_down_pass_epa_play_l3"
+    
+    # Rolling features (L5 windows)
+    - "rolling_off_epa_play_l5"
+    - "rolling_def_epa_play_allowed_l5"
+    - "rolling_off_pass_epa_play_l5"
+    - "rolling_def_pass_epa_play_allowed_l5"
+    - "rolling_off_run_epa_play_l5"
+    - "rolling_def_run_epa_play_allowed_l5"
+    - "rolling_off_success_rate_l5"
+    - "rolling_def_success_rate_allowed_l5"
+    - "rolling_off_early_down_pass_epa_play_l5"
+    
+    # Rolling features (L6 windows)
+    - "rolling_off_epa_play_l6"
+    - "rolling_def_epa_play_allowed_l6"
+    - "rolling_off_pass_epa_play_l6"
+    - "rolling_def_pass_epa_play_allowed_l6"
+    - "rolling_off_run_epa_play_l6"
+    - "rolling_def_run_epa_play_allowed_l6"
+    - "rolling_off_success_rate_l6"
+    - "rolling_def_success_rate_allowed_l6"
+    - "rolling_off_early_down_pass_epa_play_l6"
+    
+    # Rolling features (EWMA)
+    - "rolling_off_epa_play_ewma"
+    - "rolling_def_epa_play_allowed_ewma"
+    - "rolling_off_pass_epa_play_ewma"
+    - "rolling_def_pass_epa_play_allowed_ewma"
+    - "rolling_off_run_epa_play_ewma"
+    - "rolling_def_run_epa_play_allowed_ewma"
+    - "rolling_off_early_down_pass_epa_play_ewma"
+    - "rolling_off_success_rate_ewma"
+    - "rolling_def_success_rate_allowed_ewma"
+    
+    # Situational features
+    - "situational_home"
+    - "situational_rest_days"
+    - "situational_spread_close"
+    - "situational_opponent_off_epa_l3"
+    - "situational_opponent_def_epa_allowed_l3"
+    - "situational_sos_adjustment_factor"
