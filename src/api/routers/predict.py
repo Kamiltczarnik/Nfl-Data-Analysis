@@ -136,8 +136,8 @@ async def get_features(request: FeatureRequest):
     4. Return features ready for model input
     """
     try:
-        # Mock feature extraction (scaffold)
-        # In real implementation, this would use actual feature engineering
+        # Enhanced feature extraction with matchup data (scaffold)
+        # In real implementation, this would use actual feature engineering with player identification
         mock_features = {
             # Market features
             "spread_close": -3.5,
@@ -186,7 +186,16 @@ async def get_features(request: FeatureRequest):
             # Injury features
             "inj_out_count": 2,
             "inj_q_count": 3,
-            "ol_continuity_index": 0.85
+            "ol_continuity_index": 0.85,
+            
+            # Enhanced matchup features (Sprint 1 completion)
+            "qb_epa_vs_defense_l3": 0.18,
+            "receiver_target_share_vs_defense_l3": 0.12,
+            "rusher_yards_per_carry_vs_defense_l3": 4.2,
+            "pass_rush_pressure_rate_vs_offense_l3": 0.28,
+            "wr_corps_vs_cb_corps_l3": 0.15,
+            "ol_vs_dl_trenches_l3": 0.22,
+            "qb_vs_secondary_l3": 0.19
         }
         
         response = FeatureResponse(
@@ -301,6 +310,15 @@ async def get_feature_schema():
                 "inj_out_count": {"type": "int", "description": "Players out due to injury"},
                 "inj_q_count": {"type": "int", "description": "Players questionable"},
                 "ol_continuity_index": {"type": "float", "description": "Offensive line continuity"}
+            },
+            "matchup_features": {
+                "qb_epa_vs_defense_l3": {"type": "float", "description": "QB EPA vs specific defenses (L3)"},
+                "receiver_target_share_vs_defense_l3": {"type": "float", "description": "Receiver target share vs defenses (L3)"},
+                "rusher_yards_per_carry_vs_defense_l3": {"type": "float", "description": "Rusher YPC vs defenses (L3)"},
+                "pass_rush_pressure_rate_vs_offense_l3": {"type": "float", "description": "Pass rush pressure rate vs offenses (L3)"},
+                "wr_corps_vs_cb_corps_l3": {"type": "float", "description": "WR corps vs CB corps matchup (L3)"},
+                "ol_vs_dl_trenches_l3": {"type": "float", "description": "OL vs DL trenches battle (L3)"},
+                "qb_vs_secondary_l3": {"type": "float", "description": "QB vs secondary performance (L3)"}
             }
         }
         

@@ -206,7 +206,7 @@ Currently, the API does not require authentication. In production, implement app
 }
 ```
 
-### Play-by-Play Data
+### Play-by-Play Data (Enhanced with Matchup Information)
 ```json
 {
   "game_id": "2024_01_KC_BUF",
@@ -220,7 +220,32 @@ Currently, the API does not require authentication. In production, implement app
   "distance": 10,
   "yardline_100": 75,
   "score_differential": 0,
-  "game_seconds_remaining": 3600
+  "game_seconds_remaining": 3600,
+  "posteam_score": 0,
+  "defteam_score": 0,
+  
+  "passer_player_id": "00-0019596",
+  "passer_player_name": "Patrick Mahomes",
+  "receiver_player_id": "00-0033873",
+  "receiver_player_name": "Travis Kelce",
+  "rusher_player_id": null,
+  "rusher_player_name": null,
+  
+  "sack_player_id": null,
+  "sack_player_name": null,
+  "qb_hit_1_player_id": null,
+  "qb_hit_1_player_name": null,
+  "interception_player_id": null,
+  "interception_player_name": null,
+  
+  "air_yards": 8.5,
+  "pass_location": "middle",
+  "yards_gained": 12,
+  "pass_touchdown": 0,
+  "rush_touchdown": 0,
+  "interception": 0,
+  "sack": 0,
+  "qb_hit": 0
 }
 ```
 

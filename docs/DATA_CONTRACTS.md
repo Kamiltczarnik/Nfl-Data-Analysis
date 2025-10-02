@@ -26,8 +26,11 @@
 
 - Must include: `game_id`, `season`, `week`, `home_team`, `away_team`, `spread_line`, `total_line`, `moneyline`
 
-### PBP minimal columns
+### PBP enhanced columns
 
 - Include EPA (`epa`), WP (`wp`), completion probability (`cp`) and standard play context fields used for PROE.
+- **Enhanced MVP columns (57 total)**: Core metrics, player identification (offensive/defensive), play outcomes, and matchup data.
+- **Player identification**: `passer_player_id`, `receiver_player_id`, `rusher_player_id`, `sack_player_id`, `interception_player_id`, tackle players, pass defense players.
+- **Matchup data**: Air yards, pass location, yards gained, touchdowns, sacks, QB hits, interceptions for comprehensive matchup analysis.
 
 

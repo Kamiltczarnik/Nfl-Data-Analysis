@@ -301,12 +301,43 @@ class PBPReader(NFLDataReader):
             'game_seconds_remaining', 'pass', 'rush', 'play_type'
         ]
         
-        # Minimal columns for MVP
+        # Enhanced columns for MVP (including matchup data)
         self.mvp_columns = [
-            'game_id', 'play_id', 'posteam', 'defteam', 'epa', 'wp', 'cp',
-            'down', 'distance', 'yardline_100', 'score_differential',
-            'game_seconds_remaining', 'pass', 'rush', 'play_type',
-            'season', 'week', 'quarter', 'drive', 'desc'
+            # Core play identification
+            'game_id', 'play_id', 'posteam', 'defteam', 'season', 'week', 'quarter', 'drive',
+            
+            # Core metrics
+            'epa', 'wp', 'cp', 'down', 'distance', 'yardline_100', 'score_differential', 
+            'game_seconds_remaining', 'posteam_score', 'defteam_score',
+            
+            # Play type and context
+            'pass', 'rush', 'play_type', 'desc',
+            
+            # Offensive player identification (for matchup analysis)
+            'passer_player_id', 'passer_player_name',
+            'receiver_player_id', 'receiver_player_name', 
+            'rusher_player_id', 'rusher_player_name',
+            
+            # Defensive player identification (for matchup analysis)
+            'sack_player_id', 'sack_player_name',
+            'qb_hit_1_player_id', 'qb_hit_1_player_name',
+            'qb_hit_2_player_id', 'qb_hit_2_player_name',
+            'interception_player_id', 'interception_player_name',
+            
+            # Tackle identification (for matchup analysis)
+            'solo_tackle_1_player_id', 'solo_tackle_1_player_name',
+            'solo_tackle_2_player_id', 'solo_tackle_2_player_name',
+            'assist_tackle_1_player_id', 'assist_tackle_1_player_name',
+            'assist_tackle_2_player_id', 'assist_tackle_2_player_name',
+            
+            # Pass defense (for matchup analysis)
+            'pass_defense_1_player_id', 'pass_defense_1_player_name',
+            'pass_defense_2_player_id', 'pass_defense_2_player_name',
+            
+            # Play outcomes (for matchup analysis)
+            'air_yards', 'pass_location', 'yards_gained',
+            'pass_touchdown', 'rush_touchdown', 'interception',
+            'sack', 'qb_hit', 'qb_scramble'
         ]
     
     @retry(
