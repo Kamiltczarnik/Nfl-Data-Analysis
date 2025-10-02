@@ -4,6 +4,16 @@
 
 ---
 
+See also: [Architecture & Module Contracts](docs/ARCHITECTURE.md)
+See also: [API](docs/API.md)
+
+---
+
+Contributor guardrails:
+- Start by reading `docs/MANIFEST.md` and `docs/CONVENTIONS.md`.
+- Do not create new folders/files unless you update the manifest and link from docs.
+- Use configs in `configs/*.yaml` and `overrides/*.yaml` for behavior changes.
+
 ## ✅ Pre-flight Checklist (Conceptual)
 - Define **data footprint** (teams, players, matchups, markets, weather, injuries) and which source supplies each field.
 - Prefer **`nflreadpy`** (active) over `nfl_data_py` (deprecated) for schedules, PBP, weekly stats, rosters, injuries, snaps, depth charts, and IDs.
@@ -12,6 +22,8 @@
 - Implement **validation gates** (Brier/log-loss, calibration, sanity checks) after each integration.
 - Provide **manual overrides** (injury/weather/lineup) via YAML/JSON in the prediction interface.
 - Plan tight **iteration loops**: feature ablations, upset error analysis, drift monitoring, weekly refresh.
+
+Important principle: prioritize the current season. Features and aggregates should be computed from the ongoing season only, with recent games weighted more heavily (EWMA/high-alpha). Prior seasons are not used by default except as optional low-weight priors for early weeks.
 
 ---
 
@@ -146,8 +158,9 @@
 ## 🧪 Feature Engineering Specs
 
 ### Rolling Windows
-- Windows: **L3** (last 3), **L5** (last 5), and **exponentially weighted** (α=0.7) for recency.
+- Windows: **L3** (last 3), **L5** (last 5), and **exponentially weighted** within-season (default **α=0.8–0.9**) for strong recency.
 - Early-down filter: downs ∈ {1,2} and neutral game state (score within ±7, time Q1–Q3).
+- Season boundary: do not mix prior-season games into windows. Optional low-weight prior can be added for weeks < window size via config.
 
 ### Success Rate
 - `success = 1 if EPA > 0 else 0` (pass/run and total); compute rates by window.
@@ -190,6 +203,7 @@
   `home`, `rest_days`, `off_epa_play_l3`, `def_epa_play_allowed_l3`, `early_down_pass_epa_l3`, `spread_close`.
 - **Ensemble**: Gradient Boosting (XGBoost/LightGBM) with the full feature set.
 - **Stacking** (optional): Blend logistic + GBM + a simple **Elo-like** EPA-aware team rating.
+  - Season weighting: train features to reflect current-season dominance; any prior-season features (if enabled) must have explicit decay and are off by default.
 
 ### Calibration
 - Use **isotonic** (preferred) or **Platt** scaling on validation folds, targeting **closing moneyline-implied probabilities**.
@@ -218,6 +232,15 @@
 - **Upset alert** flags when favorite prob ∈ (0.55, 0.68) but mismatch features are extreme.
 
 ---
+## 🌐 Future FastAPI + React (SPA) Integration
+
+- Backend: FastAPI app under `src/api/` with routers:
+  - `GET /health/` — service health
+  - `GET /games/?season=&week=` — list games for slate/history
+  - `POST /predict/` — run prediction with optional overrides payload
+- Serving: `src/serve/predict.py` remains the core inference entrypoint used by both CLI and API.
+- Frontend (later): single-page React app consuming these endpoints; supports browsing past weeks/years and this week’s slate, clicking a game to predict, and a modal to apply overrides.
+- Storage & contracts: Responses conform to `docs/API.md`; modeling table per `docs/DATA_CONTRACTS.md`.
 
 ## 📊 Evaluation & Iteration
 
@@ -256,3 +279,144 @@ overrides:
   BAL.OL.LT: "out"           # reduces ol_continuity_index
   weather.wind_mph: 22       # increases weather penalty on deep passing
   schedule.spread_line: -1.5 # allow manual line edits if markets update
+
+
+Sprint Info:
+Sprint 1 – Data Pipeline Foundations
+
+S1.1 Install & pin nflreadpy; create readers.py with robust retries + caching.
+
+S1.2 Ingest schedules (spread/total/moneyline) → parquet + schema test.
+
+S1.3 Ingest weekly + pbp → select minimal columns for MVP.
+
+S1.4 Ingest rosters, injuries, snap_counts, depth_charts.
+
+S1.5 Build ID map with import_ids; normalize team/player IDs.
+
+S1.6a Rosters & backups: define starter mapping rules (priority: latest depth chart > recent snaps > manual overrides). Persist weekly starter table keyed by (`season`,`week`,`team`,`position`,`player_id`).
+
+S1.6b Injuries ingestion: availability scoring by position group (QB > OT > WR > CB > S > RB > LB > DT/DE > TE > FB). Produce `inj_out_count`, `inj_q_count`, and per-position availability index. Wire in-week deltas (Thu–Sun AM).
+
+S1.6 Validation gate: spreads present; EPA/WP/cp non-null in PBP; injuries observed for ≥ 28 teams; weekly starter table populated → PASS to proceed.
+
+S1.7 FastAPI scaffold (no logic): add `src/api/*` and `docs/API.md`.
+
+Sprint 2 – Baseline Model (Logistic)
+
+S2.1 Rolling features: off_epa_play_l3, def_epa_play_allowed_l3, early_down_pass_epa_l3.
+
+S2.1a Sliding windows configurable via `configs/features.yaml` (default L3/L5 and EWMA α=0.7). Early-season shrinkage when weeks < window size.
+
+S2.2 Situational: home, rest_days; Market: spread_close.
+S2.2a Basic opponent-adjusted strength-of-schedule (SoS) for recent EPA/success aggregates to reduce early-season bias.
+
+S2.3 Train logistic; evaluate log-loss, Brier ≤ 0.20, calibration slope ~1.0.
+
+S2.4 Save model + scaler + column order; add CLI baseline prediction.
+
+S2.5 Validation gate: meets thresholds → PASS.
+
+Sprint 3 – Matchup Context
+
+S3.1 Off vs Def splits for pass/run EPA & success.
+
+S3.1a Apply sliding windows (L3/L5/EWMA) and early-down neutral filters.
+
+S3.2 Explosive pass rate, volatility (std dev EPA).
+S3.2a Optionally SoS-normalize these aggregates (config toggle).
+
+S3.3 Turnover luck regression indicators.
+
+S3.4 Sanity checks on feature distributions; opponent join correctness → PASS.
+
+Sprint 4 – Player & Trenches
+
+S4.1 QB module: EPA+CPOE, aDOT; map backups via depth charts/snap counts.
+
+S4.2 Trench proxies: pressure allowed/created; (optional) ESPN PBWR/PRWR scrape.
+
+S4.3 OL continuity index from depth chart changes.
+S4.3a Coverage/matchups scope: team-level features only; individual CB–WR assignments are out-of-scope unless NGS/subscription data is added later (documented in Non-goals).
+
+S4.4 Validation gate: trench mismatch examples surface in features → PASS.
+
+Sprint 5 – Ensemble + Calibration
+
+S5.1 Train GBM/XGBoost; include SoS-normalized and raw feature variants; importance sanity check (pass > run).
+
+S5.2 Simple stack with logistic and/or Elo-like prior.
+
+S5.3 Fit isotonic calibration on validation folds (target moneyline-implied probs).
+
+S5.4 Goals: ≥2–3% log-loss improvement; ECE < 0.03 → PASS.
+
+Sprint 6 – Serving & Overrides
+
+S6.1 CLI predict.py: load matchup context, apply overrides/*.yaml.
+
+S6.2 Output: team win %, drivers (SHAP), note if upset flag triggers.
+S6.2a Historical queries enforce point-in-time correctness (cutoff at game start, no leakage).
+
+S6.3 Validation: toggling QB: out reduces win % materially and explainably → PASS.
+
+S6.4 (moved to Sprint 8)
+S6.5 (moved to Sprint 8)
+
+Sprint 8 – API & SPA Contract
+
+S8.1 Wire FastAPI to `src/serve/predict.py`; implement `GET /games` with filtering (season, week) and pagination.
+S8.2 Implement `POST /predict` with overrides payload validation; return calibrated probabilities + drivers.
+S8.3 Historical data handling: query modeling table/feature store by `season`/`week` and ensure point-in-time correctness; include response metadata with window parameters used.
+S8.4 Response versioning and schemas; enable CORS for SPA; error handling patterns.
+S8.5 Caching headers and simple in-memory cache for slate endpoints.
+S8.6 Contract tests for endpoints; example requests/responses in `docs/API.md`.
+
+Sprint 7 – Evaluation Harness
+
+S7.1 Time-series CV backtests by week; holdout seasons.
+
+S7.2 Reliability plots; compute ECE.
+
+S7.3 Slice errors: QB changes, weather ≥ 15 mph, short week, OL continuity < 60%.
+
+S7.4 Goal: holdout Brier ≤ market + 0.005 → PASS.
+
+
+🧰 Key nfl-data-py / nflreadpy Functions (Quick Reference)
+
+Play-by-play / weekly / seasonal:
+import_pbp_data, import_weekly_data, import_seasonal_data,
+see_pbp_cols, see_weekly_colsc
+
+Schedules with betting lines:
+import_schedules → spread_line, total_line, moneyline
+
+Rosters/snaps/depth:
+import_seasonal_rosters, import_weekly_rosters, import_snap_counts, import_depth_charts
+
+Injuries:
+import_injuries
+
+IDs/Officials:
+import_ids, import_officials
+
+Advanced:
+import_seasonal_pfr, import_weekly_pfr, import_qbr, import_ftn_data
+
+Maintenance:
+cache_pbp, clean_nfl_data
+
+Preferred: Use nflreadpy (active). nfl_data_py is deprecated.
+
+⚠️ Practical Notes & Gotchas
+
+Don’t overweight turnovers, 3rd-down %, RZ TD %—use as luck controls (Δ over expected).
+
+Use early-down splits wherever possible (neutral situations).
+
+Always compute features as-of the prediction time (strict time ordering).
+
+DVOA & ESPN PBWR/PRWR lift accuracy but may require subscription/scrape; keep them optional and modular.
+
+Benchmark against market implied probabilities; goal is calibrated win %.

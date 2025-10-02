@@ -1,0 +1,67 @@
+# Data storage paths configuration
+# All paths are relative to project root unless specified as absolute
+
+data:
+  # Parquet data lake - partitioned by season/week
+  parquet_lake: "data/parquet"
+  
+  # Raw data snapshots for reproducibility
+  raw_snapshots: "data/raw"
+  
+  # Feature store (SQLite for MVP, can be upgraded to Postgres)
+  feature_store: "data/features.db"
+  
+  # Model artifacts storage
+  models: "models"
+  
+  # Cache directory for API responses and intermediate data
+  cache: "data/cache"
+  
+  # Temporary files during processing
+  temp: "data/temp"
+
+# Specific table paths within parquet lake
+tables:
+  schedules: "schedules"
+  pbp: "pbp"
+  weekly: "weekly"
+  rosters: "rosters"
+  snap_counts: "snap_counts"
+  depth_charts: "depth_charts"
+  injuries: "injuries"
+  ids: "ids"
+  starters: "starters"
+
+# Cache configuration
+cache:
+  # Cache TTL in seconds (24 hours default)
+  ttl_seconds: 86400
+  
+  # Maximum cache size in MB
+  max_size_mb: 1000
+  
+  # Cache compression
+  compress: true
+
+# API configuration
+api:
+  # nflreadpy API base URL
+  base_url: "https://github.com/nflverse/nflreadr"
+  
+  # Request timeout in seconds
+  timeout_seconds: 30
+  
+  # Rate limiting
+  requests_per_minute: 60
+  
+  # Retry configuration
+  max_retries: 3
+  backoff_factor: 0.3
+
+# Logging configuration
+logging:
+  level: "INFO"
+  file: "logs/nfl_data_pipeline.log"
+  max_size_mb: 10
+  backup_count: 5
+

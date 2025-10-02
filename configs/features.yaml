@@ -1,0 +1,359 @@
+# Feature engineering configuration
+# This file defines feature selection, window parameters, and validation rules
+
+# Rolling window configurations
+windows:
+  # Last N games windows
+  l3: 3
+  l5: 5
+  l6: 6
+  
+  # Exponentially weighted moving average
+  ewma:
+    alpha: 0.8
+    min_periods: 2
+  
+  # Early season handling when weeks < window size
+  early_season:
+    min_weeks_for_window: 2
+    shrinkage_factor: 0.5
+
+# Feature families for ablation studies
+feature_families:
+  market:
+    - "spread_close"
+    - "total_close" 
+    - "moneyline_close"
+  
+  rolling_offense:
+    - "off_epa_play_l3"
+    - "off_pass_epa_l3"
+    - "off_run_epa_l3"
+    - "off_success_l3"
+    - "early_down_pass_epa_l3"
+  
+  rolling_defense:
+    - "def_epa_play_allowed_l3"
+    - "def_pass_epa_allowed_l3"
+    - "def_run_epa_allowed_l3"
+    - "def_success_allowed_l3"
+  
+  strategy:
+    - "proe_l5"
+    - "early_down_pass_rate_l5"
+  
+  qb:
+    - "qb_epa_cpoe_l6"
+    - "adot_l5"
+  
+  trenches:
+    - "pressure_allowed_l5"
+    - "pressure_created_l5"
+    - "sack_rate_oe_l5"
+  
+  situational:
+    - "rest_days"
+    - "short_week"
+    - "primetime"
+    - "roof"
+    - "surface"
+  
+  weather:
+    - "wx_temp_f"
+    - "wx_wind_mph"
+    - "wx_precip"
+  
+  injuries:
+    - "inj_out_count"
+    - "inj_q_count"
+    - "ol_continuity_index"
+
+# Required columns for each data source
+required_columns:
+  schedules:
+    - "game_id"
+    - "season"
+    - "week"
+    - "home_team"
+    - "away_team"
+    - "spread_line"
+    - "total_line"
+    - "moneyline"
+  
+  pbp:
+    - "game_id"
+    - "play_id"
+    - "posteam"
+    - "defteam"
+    - "epa"
+    - "wp"
+    - "cp"
+    - "down"
+    - "distance"
+    - "yardline_100"
+    - "score_differential"
+    - "game_seconds_remaining"
+  
+  weekly:
+    - "player_id"
+    - "team"
+    - "season"
+    - "week"
+    - "position"
+  
+  rosters:
+    - "season"
+    - "team"
+    - "position"
+    - "gsis_id"
+    - "full_name"
+    - "status"
+    - "week"
+  
+  injuries:
+    - "season"
+    - "team"
+    - "week"
+    - "gsis_id"
+    - "position"
+    - "full_name"
+    - "report_status"
+    - "practice_status"
+  
+  snap_counts:
+    - "game_id"
+    - "season"
+    - "week"
+    - "player"
+    - "position"
+    - "team"
+    - "opponent"
+    - "offense_snaps"
+    - "defense_snaps"
+  
+  depth_charts:
+    - "season"
+    - "week"
+    - "depth_team"
+    - "position"
+    - "gsis_id"
+    - "full_name"
+    - "depth_position"
+  
+  players:
+    - "gsis_id"
+    - "display_name"
+    - "first_name"
+    - "last_name"
+    - "position"
+    - "nfl_id"
+    - "pfr_id"
+    - "pff_id"
+    - "espn_id"
+  
+  teams:
+    - "season"
+    - "team"
+    - "nfl"
+    - "nfl_team_id"
+    - "espn"
+    - "pfr"
+    - "pff"
+    - "full"
+  
+  ff_playerids:
+    - "gsis_id"
+    - "espn_id"
+    - "pfr_id"
+    - "pff_id"
+    - "sportradar_id"
+    - "name"
+    - "position"
+    - "team"
+  
+  starters:
+    - "season"
+    - "week"
+    - "team"
+    - "position"
+    - "player_id"
+    - "is_starter"
+    - "source"
+    - "as_of"
+
+# Starter mapping configuration
+starter_mapping:
+  # Priority order for determining starters
+  priority_order:
+    - "depth_chart"
+    - "snaps"
+    - "override"
+  
+  # Position groups for starter determination
+  position_groups:
+    offense:
+      - "QB"
+      - "RB"
+      - "WR"
+      - "TE"
+      - "FB"
+      - "OT"
+      - "OG"
+      - "C"
+    defense:
+      - "CB"
+      - "S"
+      - "LB"
+      - "DT"
+      - "DE"
+      - "NT"
+    special_teams:
+      - "K"
+      - "P"
+      - "LS"
+
+# Injury scoring configuration
+injury_scoring:
+  # Position group priority (higher = more important)
+  position_priority:
+    QB: 10
+    OT: 9
+    WR: 8
+    CB: 7
+    S: 6
+    RB: 5
+    LB: 4
+    DT: 3
+    DE: 3
+    TE: 2
+    FB: 1
+  
+  # Injury status scoring
+  status_scores:
+    out: 0.0
+    doubtful: 0.25
+    questionable: 0.5
+    probable: 0.75
+    active: 1.0
+  
+  # Practice status scoring
+  practice_scores:
+    did_not_participate: 0.0
+    limited: 0.5
+    full: 1.0
+
+# Data validation rules
+validation:
+  # Numeric ranges for validation
+  ranges:
+    spread_line:
+      min: -30.0
+      max: 30.0
+    
+    total_line:
+      min: 20.0
+      max: 80.0
+    
+    moneyline:
+      min: -1000.0
+      max: 1000.0
+    
+    epa:
+      min: -10.0
+      max: 10.0
+    
+    wp:
+      min: 0.0
+      max: 1.0
+    
+    cp:
+      min: 0.0
+      max: 1.0
+  
+  # Required non-null percentages
+  non_null_thresholds:
+    schedules: 0.95
+    pbp: 0.90
+    weekly: 0.85
+    rosters: 0.90
+    injuries: 0.80
+  
+  # Team abbreviation validation
+  valid_teams:
+    - "ARI"
+    - "ATL"
+    - "BAL"
+    - "BUF"
+    - "CAR"
+    - "CHI"
+    - "CIN"
+    - "CLE"
+    - "DAL"
+    - "DEN"
+    - "DET"
+    - "GB"
+    - "HOU"
+    - "IND"
+    - "JAX"
+    - "KC"
+    - "LV"
+    - "LAC"
+    - "LAR"
+    - "MIA"
+    - "MIN"
+    - "NE"
+    - "NO"
+    - "NYG"
+    - "NYJ"
+    - "PHI"
+    - "PIT"
+    - "SF"
+    - "SEA"
+    - "TB"
+    - "TEN"
+    - "WAS"
+
+# Early-down filter configuration
+early_down:
+  # Down numbers to include (1st and 2nd down)
+  downs: [1, 2]
+  
+  # Score differential threshold (within 7 points)
+  score_diff_max: 7
+  
+  # Quarters to include (Q1-Q3)
+  quarters: [1, 2, 3]
+
+# Success rate definition
+success:
+  # EPA threshold for success
+  epa_threshold: 0.0
+
+# Explosive play definition
+explosive:
+  # Yards gained threshold
+  yards_threshold: 20
+  
+  # EPA threshold (alternative)
+  epa_threshold: 0.6
+
+# Position group weights for injury scoring
+injury_weights:
+  QB: 1.0
+  OT: 0.9
+  WR: 0.8
+  CB: 0.8
+  S: 0.7
+  RB: 0.6
+  LB: 0.6
+  DT: 0.5
+  DE: 0.5
+  TE: 0.4
+  FB: 0.3
+
+# Weather thresholds
+weather:
+  wind_high: 15.0  # mph
+  temp_cold: 32.0  # fahrenheit
+  temp_hot: 85.0   # fahrenheit
+  precip_heavy: 0.5  # inches
