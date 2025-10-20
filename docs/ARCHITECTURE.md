@@ -64,6 +64,12 @@ This document maps how modules interact, what each produces/consumes, and the ke
   - Inputs: schedules, injuries, depth charts, snaps, stadium metadata, weather forecasts (or overrides).
   - Outputs: situational columns listed in the Data Dictionary (e.g., `rest_days`, `wx_*`, `inj_*`, `ol_continuity_index`).
 
+- `src/features/matchup.py`
+  - Purpose: Compute player and position group matchup features from PBP data.
+  - Inputs: PBP with player identification, depth charts, snap counts, starter mappings.
+  - Outputs: matchup columns (e.g., `wr_vs_cb_target_share_l3`, `ol_vs_dl_pressure_rate_l5`, `qb_vs_secondary_epa_l6`).
+  - Key contracts: player position mapping, coverage scheme inference, matchup efficiency metrics.
+
 - `src/features/assemble.py`
   - Purpose: Join all engineered features into the modeling table (two rows per game).
   - Inputs: outputs from other feature modules; market priors from schedules.
@@ -144,9 +150,10 @@ This document maps how modules interact, what each produces/consumes, and the ke
 ### Command-line workflows (examples)
 
 - Build data (weekly): readers → transforms → features → assemble modeling table.
-- Train baseline: fit logistic, save model + scaler + column order, report metrics.
+- Train baseline: time-based split (train on past seasons, test on latest), isotonic calibration on held-out calibration fold, lightweight hyperparameter search; save model + scaler + column order, report metrics.
 - Train neural network: fit multi-branch network, save model + scaler + column order, report metrics.
 - Train ensemble + calibrate: GBM/XGBoost, stacking, isotonic fit; save artifacts.
+- Build matchup features: PBP → player identification → position mapping → matchup analysis → rolling windows.
 - Predict: load latest features, apply overrides, run stack + calibration, output JSON/CSV with SHAP.
 
 ### Minimal expected outputs

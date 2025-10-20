@@ -218,6 +218,90 @@ class RollingFeatureCalculator:
         successful_plays = len(team_offense[team_offense['epa'] > 0])
         success_rate = successful_plays / total_plays if total_plays > 0 else 0
         
+        # Advanced Features
+        
+        # Explosive play rate (EPA >= 0.6 or yards >= 20)
+        explosive_plays = team_offense[
+            (team_offense['epa'] >= 0.6) | 
+            (team_offense['yards_gained'] >= 20)
+        ]
+        explosive_play_rate = len(explosive_plays) / total_plays if total_plays > 0 else 0
+        
+        # Explosive pass rate
+        explosive_pass_plays = pass_plays[
+            (pass_plays['epa'] >= 0.6) | 
+            (pass_plays['yards_gained'] >= 20)
+        ]
+        explosive_pass_rate = len(explosive_pass_plays) / len(pass_plays) if len(pass_plays) > 0 else 0
+        
+        # PROE (Pass Rate Over Expected) - simplified calculation
+        # Expected pass rate based on down and distance
+        early_down_neutral = early_down_plays[
+            (early_down_plays['down'].isin([1, 2])) &
+            (early_down_plays['score_differential'].abs() <= 7) &
+            (early_down_plays.get('quarter', pd.Series([1] * len(early_down_plays), index=early_down_plays.index)).isin([1, 2, 3]))
+        ]
+        
+        if not early_down_neutral.empty:
+            actual_pass_rate = len(early_down_neutral[early_down_neutral['pass'] == 1]) / len(early_down_neutral)
+            
+            # Simple expected pass rate model based on down and distance
+            expected_pass_rate = self._calculate_expected_pass_rate(early_down_neutral)
+            proe = actual_pass_rate - expected_pass_rate
+        else:
+            proe = 0.0
+        
+        # Early down pass rate
+        early_down_pass_rate = len(early_down_pass) / len(early_down_plays) if len(early_down_plays) > 0 else 0
+        
+        # QB composite metrics (EPA + CPOE approximation)
+        qb_plays = pass_plays[pass_plays['passer_player_id'].notna()]
+        if not qb_plays.empty:
+            qb_epa_per_play = qb_plays['epa'].sum() / len(qb_plays)
+            
+            # CPOE approximation using completion probability
+            if 'cp' in qb_plays.columns:
+                # Derive complete_pass from pass_touchdown and other indicators
+                if 'pass_touchdown' in qb_plays.columns:
+                    # For now, use cp > 0.5 as completion proxy
+                    completions = qb_plays[qb_plays['cp'] > 0.5]
+                    actual_completion_rate = len(completions) / len(qb_plays)
+                else:
+                    actual_completion_rate = qb_plays['cp'].mean()
+                expected_completion_rate = qb_plays['cp'].mean()
+                cpoe = actual_completion_rate - expected_completion_rate
+            else:
+                cpoe = 0.0
+            
+            # QB composite (weighted combination)
+            qb_composite = (qb_epa_per_play * 0.7) + (cpoe * 0.3)
+            
+            # Air yards per attempt
+            if 'air_yards' in qb_plays.columns:
+                adot = qb_plays['air_yards'].mean()
+            else:
+                adot = 0.0
+        else:
+            qb_epa_per_play = 0.0
+            cpoe = 0.0
+            qb_composite = 0.0
+            adot = 0.0
+        
+        # Pressure metrics
+        dropback_plays = team_offense[
+            (team_offense['pass'] == 1) | 
+            (team_offense.get('qb_scramble', pd.Series(False, index=team_offense.index)).astype(bool))
+        ]
+        
+        if not dropback_plays.empty:
+            sacks = dropback_plays['sack'].sum() if 'sack' in dropback_plays.columns else 0
+            qb_hits = dropback_plays['qb_hit'].sum() if 'qb_hit' in dropback_plays.columns else 0
+            pressure_rate = (sacks + qb_hits) / len(dropback_plays)
+            sack_rate = sacks / len(dropback_plays)
+        else:
+            pressure_rate = 0.0
+            sack_rate = 0.0
+        
         return {
             'off_epa_play': epa_per_play,
             'off_pass_epa_play': pass_epa_per_play,
@@ -226,7 +310,18 @@ class RollingFeatureCalculator:
             'off_success_rate': success_rate,
             'off_total_plays': total_plays,
             'off_pass_plays': len(pass_plays),
-            'off_run_plays': len(run_plays)
+            'off_run_plays': len(run_plays),
+            # Advanced features
+            'off_explosive_play_rate': explosive_play_rate,
+            'off_explosive_pass_rate': explosive_pass_rate,
+            'off_proe': proe,
+            'off_early_down_pass_rate': early_down_pass_rate,
+            'off_qb_epa_per_play': qb_epa_per_play,
+            'off_qb_cpoe': cpoe,
+            'off_qb_composite': qb_composite,
+            'off_adot': adot,
+            'off_pressure_rate': pressure_rate,
+            'off_sack_rate': sack_rate
         }
     
     def _calculate_defensive_metrics(self, game_pbp: pd.DataFrame, team: str) -> Dict[str, float]:
@@ -265,6 +360,34 @@ class RollingFeatureCalculator:
             'def_run_plays_faced': len(run_plays_faced)
         }
     
+    def _calculate_expected_pass_rate(self, plays: pd.DataFrame) -> float:
+        """Calculate expected pass rate based on down and distance."""
+        if plays.empty:
+            return 0.5
+        
+        # Simple expected pass rate model
+        # 1st down: 55% pass rate
+        # 2nd down: 60% pass rate
+        # 3rd down: 80% pass rate (but we're only using 1st/2nd down)
+        
+        first_down_plays = plays[plays['down'] == 1]
+        second_down_plays = plays[plays['down'] == 2]
+        
+        if len(plays) == 0:
+            return 0.5
+        
+        # Weighted average based on down
+        first_down_weight = len(first_down_plays) / len(plays)
+        second_down_weight = len(second_down_plays) / len(plays)
+        
+        expected_rate = (first_down_weight * 0.55) + (second_down_weight * 0.60)
+        
+        # Adjust for distance (longer distances = more passing)
+        avg_distance = plays['distance'].mean() if 'distance' in plays.columns else 10
+        distance_adjustment = min(0.1, (avg_distance - 10) * 0.01)  # Max 10% adjustment
+        
+        return max(0.3, min(0.8, expected_rate + distance_adjustment))
+
     def _get_empty_offensive_metrics(self) -> Dict[str, float]:
         """Return empty offensive metrics."""
         return {
@@ -275,7 +398,18 @@ class RollingFeatureCalculator:
             'off_success_rate': 0.0,
             'off_total_plays': 0,
             'off_pass_plays': 0,
-            'off_run_plays': 0
+            'off_run_plays': 0,
+            # Advanced features
+            'off_explosive_play_rate': 0.0,
+            'off_explosive_pass_rate': 0.0,
+            'off_proe': 0.0,
+            'off_early_down_pass_rate': 0.0,
+            'off_qb_epa_per_play': 0.0,
+            'off_qb_cpoe': 0.0,
+            'off_qb_composite': 0.0,
+            'off_adot': 0.0,
+            'off_pressure_rate': 0.0,
+            'off_sack_rate': 0.0
         }
     
     def _get_empty_defensive_metrics(self) -> Dict[str, float]:
@@ -371,12 +505,24 @@ class RollingFeatureCalculator:
         # Calculate weighted averages
         features = {}
         
-        # Offensive features
+        # Basic offensive features
         features[f'off_epa_play_{window_name}'] = window_data['off_epa_play'].mean() * shrinkage_factor
         features[f'off_pass_epa_play_{window_name}'] = window_data['off_pass_epa_play'].mean() * shrinkage_factor
         features[f'off_run_epa_play_{window_name}'] = window_data['off_run_epa_play'].mean() * shrinkage_factor
         features[f'off_early_down_pass_epa_play_{window_name}'] = window_data['off_early_down_pass_epa_play'].mean() * shrinkage_factor
         features[f'off_success_rate_{window_name}'] = window_data['off_success_rate'].mean() * shrinkage_factor
+        
+        # Advanced offensive features
+        features[f'off_explosive_play_rate_{window_name}'] = window_data['off_explosive_play_rate'].mean() * shrinkage_factor
+        features[f'off_explosive_pass_rate_{window_name}'] = window_data['off_explosive_pass_rate'].mean() * shrinkage_factor
+        features[f'off_proe_{window_name}'] = window_data['off_proe'].mean() * shrinkage_factor
+        features[f'off_early_down_pass_rate_{window_name}'] = window_data['off_early_down_pass_rate'].mean() * shrinkage_factor
+        features[f'off_qb_epa_per_play_{window_name}'] = window_data['off_qb_epa_per_play'].mean() * shrinkage_factor
+        features[f'off_qb_cpoe_{window_name}'] = window_data['off_qb_cpoe'].mean() * shrinkage_factor
+        features[f'off_qb_composite_{window_name}'] = window_data['off_qb_composite'].mean() * shrinkage_factor
+        features[f'off_adot_{window_name}'] = window_data['off_adot'].mean() * shrinkage_factor
+        features[f'off_pressure_rate_{window_name}'] = window_data['off_pressure_rate'].mean() * shrinkage_factor
+        features[f'off_sack_rate_{window_name}'] = window_data['off_sack_rate'].mean() * shrinkage_factor
         
         # Defensive features
         features[f'def_epa_play_allowed_{window_name}'] = window_data['def_def_epa_play_allowed'].mean() * shrinkage_factor
@@ -393,12 +539,24 @@ class RollingFeatureCalculator:
         
         features = {}
         
-        # Offensive EWMA features
+        # Basic offensive EWMA features
         features['off_epa_play_ewma'] = historical_data['off_epa_play'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
         features['off_pass_epa_play_ewma'] = historical_data['off_pass_epa_play'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
         features['off_run_epa_play_ewma'] = historical_data['off_run_epa_play'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
         features['off_early_down_pass_epa_play_ewma'] = historical_data['off_early_down_pass_epa_play'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
         features['off_success_rate_ewma'] = historical_data['off_success_rate'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
+        
+        # Advanced offensive EWMA features
+        features['off_explosive_play_rate_ewma'] = historical_data['off_explosive_play_rate'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
+        features['off_explosive_pass_rate_ewma'] = historical_data['off_explosive_pass_rate'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
+        features['off_proe_ewma'] = historical_data['off_proe'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
+        features['off_early_down_pass_rate_ewma'] = historical_data['off_early_down_pass_rate'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
+        features['off_qb_epa_per_play_ewma'] = historical_data['off_qb_epa_per_play'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
+        features['off_qb_cpoe_ewma'] = historical_data['off_qb_cpoe'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
+        features['off_qb_composite_ewma'] = historical_data['off_qb_composite'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
+        features['off_adot_ewma'] = historical_data['off_adot'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
+        features['off_pressure_rate_ewma'] = historical_data['off_pressure_rate'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
+        features['off_sack_rate_ewma'] = historical_data['off_sack_rate'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
         
         # Defensive EWMA features
         features['def_epa_play_allowed_ewma'] = historical_data['def_def_epa_play_allowed'].ewm(alpha=self.ewma_alpha, min_periods=self.ewma_min_periods).mean().iloc[-1]
@@ -427,6 +585,18 @@ class RollingFeatureCalculator:
             f'off_run_epa_play_{window_name}': 0.0,
             f'off_early_down_pass_epa_play_{window_name}': 0.0,
             f'off_success_rate_{window_name}': 0.0,
+            # Advanced features
+            f'off_explosive_play_rate_{window_name}': 0.0,
+            f'off_explosive_pass_rate_{window_name}': 0.0,
+            f'off_proe_{window_name}': 0.0,
+            f'off_early_down_pass_rate_{window_name}': 0.0,
+            f'off_qb_epa_per_play_{window_name}': 0.0,
+            f'off_qb_cpoe_{window_name}': 0.0,
+            f'off_qb_composite_{window_name}': 0.0,
+            f'off_adot_{window_name}': 0.0,
+            f'off_pressure_rate_{window_name}': 0.0,
+            f'off_sack_rate_{window_name}': 0.0,
+            # Defensive features
             f'def_epa_play_allowed_{window_name}': 0.0,
             f'def_pass_epa_play_allowed_{window_name}': 0.0,
             f'def_run_epa_play_allowed_{window_name}': 0.0,
@@ -441,6 +611,18 @@ class RollingFeatureCalculator:
             'off_run_epa_play_ewma': 0.0,
             'off_early_down_pass_epa_play_ewma': 0.0,
             'off_success_rate_ewma': 0.0,
+            # Advanced features
+            'off_explosive_play_rate_ewma': 0.0,
+            'off_explosive_pass_rate_ewma': 0.0,
+            'off_proe_ewma': 0.0,
+            'off_early_down_pass_rate_ewma': 0.0,
+            'off_qb_epa_per_play_ewma': 0.0,
+            'off_qb_cpoe_ewma': 0.0,
+            'off_qb_composite_ewma': 0.0,
+            'off_adot_ewma': 0.0,
+            'off_pressure_rate_ewma': 0.0,
+            'off_sack_rate_ewma': 0.0,
+            # Defensive features
             'def_epa_play_allowed_ewma': 0.0,
             'def_pass_epa_play_allowed_ewma': 0.0,
             'def_run_epa_play_allowed_ewma': 0.0,

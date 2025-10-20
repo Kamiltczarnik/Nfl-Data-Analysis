@@ -1,0 +1,314 @@
+cv_scores:
+  brier_score_mean: !!python/object/apply:numpy._core.multiarray.scalar
+  - &id001 !!python/object/apply:numpy.dtype
+    args:
+    - f8
+    - false
+    - true
+    state: !!python/tuple
+    - 3
+    - <
+    - null
+    - null
+    - null
+    - -1
+    - -1
+    - 0
+  - !!binary |
+    LaKErOrmzz8=
+  brier_score_std: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    gOfng25RVD8=
+  log_loss_mean: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    ftbbuZsh5j8=
+  log_loss_std: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    S0r5fbQPZT8=
+  roc_auc_mean: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    VWNa7pTD4D8=
+  roc_auc_std: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    QDbx88MHkj8=
+feature_columns:
+- market_spread_close
+- market_total_close
+- market_moneyline_close
+- situational_home
+- situational_rest_days
+- rolling_off_epa_play_l3
+- rolling_off_pass_epa_play_l3
+- rolling_off_run_epa_play_l3
+- rolling_off_early_down_pass_epa_play_l3
+- rolling_off_success_rate_l3
+- rolling_def_epa_play_allowed_l3
+- rolling_def_pass_epa_play_allowed_l3
+- rolling_def_run_epa_play_allowed_l3
+- rolling_def_success_rate_allowed_l3
+- rolling_off_epa_play_l5
+- rolling_off_pass_epa_play_l5
+- rolling_off_run_epa_play_l5
+- rolling_off_early_down_pass_epa_play_l5
+- rolling_off_success_rate_l5
+- rolling_def_epa_play_allowed_l5
+- rolling_def_pass_epa_play_allowed_l5
+- rolling_def_run_epa_play_allowed_l5
+- rolling_def_success_rate_allowed_l5
+- rolling_off_epa_play_l6
+- rolling_off_pass_epa_play_l6
+- rolling_off_run_epa_play_l6
+- rolling_off_early_down_pass_epa_play_l6
+- rolling_off_success_rate_l6
+- rolling_def_epa_play_allowed_l6
+- rolling_def_pass_epa_play_allowed_l6
+- rolling_def_run_epa_play_allowed_l6
+- rolling_def_success_rate_allowed_l6
+- rolling_off_epa_play_ewma
+- rolling_off_pass_epa_play_ewma
+- rolling_off_run_epa_play_ewma
+- rolling_off_early_down_pass_epa_play_ewma
+- rolling_off_success_rate_ewma
+- rolling_def_epa_play_allowed_ewma
+- rolling_def_pass_epa_play_allowed_ewma
+- rolling_def_run_epa_play_allowed_ewma
+- rolling_def_success_rate_allowed_ewma
+feature_count: 41
+model: !!python/object:sklearn.linear_model._logistic.LogisticRegression
+  C: 1.0
+  _sklearn_version: 1.7.2
+  class_weight: balanced
+  classes_: !!python/object/apply:numpy._core.multiarray._reconstruct
+    args:
+    - &id002 !!python/name:numpy.ndarray ''
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 2
+    - &id003 !!python/object/apply:numpy.dtype
+      args:
+      - i8
+      - false
+      - true
+      state: !!python/tuple
+      - 3
+      - <
+      - null
+      - null
+      - null
+      - -1
+      - -1
+      - 0
+    - false
+    - !!binary |
+      AAAAAAAAAAABAAAAAAAAAA==
+  coef_: !!python/object/apply:numpy._core.multiarray._reconstruct
+    args:
+    - *id002
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 1
+      - 41
+    - *id001
+    - false
+    - !!binary |
+      HpzY+IE7zb+73bGJcJKhP2yGLFXIwtC/5yarZIsUvT8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+  dual: false
+  fit_intercept: true
+  intercept_: !!python/object/apply:numpy._core.multiarray._reconstruct
+    args:
+    - *id002
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 1
+    - *id001
+    - false
+    - !!binary |
+      BBriVRjxGb8=
+  intercept_scaling: 1
+  l1_ratio: null
+  max_iter: 1000
+  multi_class: deprecated
+  n_features_in_: 41
+  n_iter_: !!python/object/apply:numpy._core.multiarray._reconstruct
+    args:
+    - *id002
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 1
+    - !!python/object/apply:numpy.dtype
+      args:
+      - i4
+      - false
+      - true
+      state: !!python/tuple
+      - 3
+      - <
+      - null
+      - null
+      - null
+      - -1
+      - -1
+      - 0
+    - false
+    - !!binary |
+      BAAAAA==
+  n_jobs: null
+  penalty: l2
+  random_state: 42
+  solver: liblinear
+  tol: 0.0001
+  verbose: 0
+  warm_start: false
+positive_class_ratio: !!python/object/apply:numpy._core.multiarray.scalar
+- *id001
+- !!binary |
+  YqnHQCW33j8=
+scaler: !!python/object:sklearn.preprocessing._data.StandardScaler
+  _sklearn_version: 1.7.2
+  copy: true
+  mean_: !!python/object/apply:numpy._core.multiarray._reconstruct
+    args:
+    - *id002
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 41
+    - *id001
+    - false
+    - !!binary |
+      SdDrWRL0+T8xbV8oTKNGQKbtC4Vpw1rAXR0gK1cH4D8AAAAAAAAcQAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+  n_features_in_: 41
+  n_samples_seen_: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id003
+  - !!binary |
+    uAgAAAAAAAA=
+  scale_: !!python/object/apply:numpy._core.multiarray._reconstruct
+    args:
+    - *id002
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 41
+    - *id001
+    - false
+    - !!binary |
+      LGA+CWRPGEAKCYMYgl8SQPOw/g8rd3NAYzHfofz/3z8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8A
+      AAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAA
+      AAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAA
+      AAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAA
+      AADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAA
+      APA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPw==
+  var_: !!python/object/apply:numpy._core.multiarray._reconstruct
+    args:
+    - *id002
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 41
+    - *id001
+    - false
+    - !!binary |
+      Bu4DBdt3QkDZtivUHhk1QNO2/tZ9rvdAgb2+Q/n/zz8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+  with_mean: true
+  with_std: true
+test_metrics:
+  accuracy: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    chzHcRzH4T8=
+  brier_score: 0.2480775096619441
+  calibration_slope: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    y1YQl2Vr978=
+  f1_score: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    chd3cRd34T8=
+  log_loss: 0.68945214603017
+  precision: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    ujFPH60m4T8=
+  recall: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    vxoT6YHK4T8=
+  roc_auc: 0.5573533196088524
+train_metrics:
+  accuracy: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    dSfzId3J4D8=
+  brier_score: 0.24875009112115856
+  calibration_slope: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    CoaLuJzR9D8=
+  f1_score: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    /hN1/fmr4D8=
+  log_loss: 0.6905874976160333
+  precision: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    mrbG380j4D8=
+  recall: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    MW49MW494T8=
+  roc_auc: 0.5274478439093122
+training_data_size: 2790

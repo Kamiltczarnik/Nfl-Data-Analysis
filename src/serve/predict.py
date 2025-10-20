@@ -57,40 +57,28 @@ class BaselinePredictor:
         logger.info("Loading latest model artifacts")
         
         try:
-            # Find the latest model files
-            model_files = list(self.model_dir.glob("baseline_model_*.joblib"))
-            scaler_files = list(self.model_dir.glob("baseline_scaler_*.joblib"))
-            features_files = list(self.model_dir.glob("baseline_features_*.yaml"))
-            metrics_files = list(self.model_dir.glob("baseline_metrics_*.yaml"))
-            
-            if not model_files:
-                logger.error("No model files found")
+            # Find timestamped subdirectories
+            subdirs = [d for d in self.model_dir.iterdir() if d.is_dir()]
+            if not subdirs:
+                logger.error("No model directories found")
+                return False
+            latest_dir = sorted(subdirs, reverse=True)[0]
+
+            model_path = latest_dir / "model.joblib"
+            scaler_path = latest_dir / "scaler.joblib"
+            features_path = latest_dir / "feature_columns.joblib"
+            metrics_path = latest_dir / "metrics.joblib"
+
+            if not (model_path.exists() and scaler_path.exists() and features_path.exists() and metrics_path.exists()):
+                logger.error(f"Missing artifacts in {latest_dir}")
                 return False
             
-            # Get the latest files (by timestamp in filename)
-            latest_model = max(model_files, key=lambda x: x.stem.split('_')[-1])
-            latest_scaler = max(scaler_files, key=lambda x: x.stem.split('_')[-1])
-            latest_features = max(features_files, key=lambda x: x.stem.split('_')[-1])
-            latest_metrics = max(metrics_files, key=lambda x: x.stem.split('_')[-1])
+            self.model = joblib.load(model_path)
+            self.scaler = joblib.load(scaler_path)
+            self.feature_columns = joblib.load(features_path)
+            self.metrics = joblib.load(metrics_path)
             
-            # Load model artifacts
-            self.model = joblib.load(latest_model)
-            self.scaler = joblib.load(latest_scaler)
-            
-            with open(latest_features, 'r') as f:
-                features_data = yaml.safe_load(f)
-                self.feature_columns = features_data['feature_columns']
-            
-            with open(latest_metrics, 'r') as f:
-                self.metrics = yaml.safe_load(f)
-            
-            logger.info(f"Loaded model artifacts:")
-            logger.info(f"  Model: {latest_model}")
-            logger.info(f"  Scaler: {latest_scaler}")
-            logger.info(f"  Features: {latest_features}")
-            logger.info(f"  Metrics: {latest_metrics}")
-            logger.info(f"  Feature count: {len(self.feature_columns)}")
-            
+            logger.info(f"Loaded model artifacts from {latest_dir}")
             return True
             
         except Exception as e:

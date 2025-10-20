@@ -44,7 +44,7 @@
 
 ### Model Comparison Framework
 
-- **Baseline model**: Logistic regression (`models/baseline.joblib`)
+- **Baseline model**: Logistic regression with time-based split and isotonic calibration (`models/baseline/*.joblib`)
 - **Neural network**: Multi-branch deep network (`models/neural_network.h5`)
 - **Ensemble model**: Gradient boosting (`models/gbm.joblib`)
 - **Stacked model**: Combined predictions (`models/stacked.joblib`)

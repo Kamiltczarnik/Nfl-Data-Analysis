@@ -20,6 +20,13 @@ data:
   # Temporary files during processing
   temp: "data/temp"
 
+# Model storage paths
+models:
+  baseline_dir: "models/baseline"
+  neural_network_dir: "models/neural_network"
+  ensemble_dir: "models/ensemble"
+  stacked_dir: "models/stacked"
+
 # Specific table paths within parquet lake
 tables:
   schedules: "schedules"

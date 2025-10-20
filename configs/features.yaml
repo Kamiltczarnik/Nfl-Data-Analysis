@@ -338,6 +338,12 @@ validation:
     rosters: 0.90
     injuries: 0.80
   
+  # Performance thresholds (realistic for NFL)
+  performance_thresholds:
+    log_loss_max: 0.66
+    brier_score_max: 0.23
+    calibration_slope_min: 0.8
+    calibration_slope_max: 1.2
   # Team abbreviation validation
   valid_teams:
     - "ARI"
@@ -472,3 +478,160 @@ model_features:
     - "situational_opponent_off_epa_l3"
     - "situational_opponent_def_epa_allowed_l3"
     - "situational_sos_adjustment_factor"
+
+# Matchup features for enhanced prediction accuracy
+matchup_features:
+  # Individual player matchups
+  wr_vs_cb:
+    - "wr_vs_cb_target_share_l3"
+    - "wr_vs_cb_air_yards_l3"
+    - "wr_vs_cb_separation_l3"
+    - "wr_vs_cb_red_zone_efficiency_l3"
+    - "wr_vs_cb_third_down_efficiency_l3"
+    - "wr_vs_cb_target_share_l5"
+    - "wr_vs_cb_air_yards_l5"
+    - "wr_vs_cb_separation_l5"
+    - "wr_vs_cb_red_zone_efficiency_l5"
+    - "wr_vs_cb_third_down_efficiency_l5"
+    - "wr_vs_cb_target_share_l6"
+    - "wr_vs_cb_air_yards_l6"
+    - "wr_vs_cb_separation_l6"
+    - "wr_vs_cb_red_zone_efficiency_l6"
+    - "wr_vs_cb_third_down_efficiency_l6"
+    - "wr_vs_cb_target_share_ewma"
+    - "wr_vs_cb_air_yards_ewma"
+    - "wr_vs_cb_separation_ewma"
+    - "wr_vs_cb_red_zone_efficiency_ewma"
+    - "wr_vs_cb_third_down_efficiency_ewma"
+  
+  ol_vs_dl:
+    - "ol_vs_dl_pressure_rate_l3"
+    - "ol_vs_dl_sack_rate_l3"
+    - "ol_vs_dl_run_blocking_efficiency_l3"
+    - "ol_vs_dl_pass_protection_grade_l3"
+    - "ol_vs_dl_pressure_rate_l5"
+    - "ol_vs_dl_sack_rate_l5"
+    - "ol_vs_dl_run_blocking_efficiency_l5"
+    - "ol_vs_dl_pass_protection_grade_l5"
+    - "ol_vs_dl_pressure_rate_l6"
+    - "ol_vs_dl_sack_rate_l6"
+    - "ol_vs_dl_run_blocking_efficiency_l6"
+    - "ol_vs_dl_pass_protection_grade_l6"
+    - "ol_vs_dl_pressure_rate_ewma"
+    - "ol_vs_dl_sack_rate_ewma"
+    - "ol_vs_dl_run_blocking_efficiency_ewma"
+    - "ol_vs_dl_pass_protection_grade_ewma"
+  
+  qb_vs_secondary:
+    - "qb_vs_secondary_completion_rate_l3"
+    - "qb_vs_secondary_air_yards_l3"
+    - "qb_vs_secondary_turnover_rate_l3"
+    - "qb_vs_secondary_pressure_handling_l3"
+    - "qb_vs_secondary_completion_rate_l5"
+    - "qb_vs_secondary_air_yards_l5"
+    - "qb_vs_secondary_turnover_rate_l5"
+    - "qb_vs_secondary_pressure_handling_l5"
+    - "qb_vs_secondary_completion_rate_l6"
+    - "qb_vs_secondary_air_yards_l6"
+    - "qb_vs_secondary_turnover_rate_l6"
+    - "qb_vs_secondary_pressure_handling_l6"
+    - "qb_vs_secondary_completion_rate_ewma"
+    - "qb_vs_secondary_air_yards_ewma"
+    - "qb_vs_secondary_turnover_rate_ewma"
+    - "qb_vs_secondary_pressure_handling_ewma"
+  
+  rb_vs_lb:
+    - "rb_vs_lb_yards_per_carry_l3"
+    - "rb_vs_lb_broken_tackles_l3"
+    - "rb_vs_lb_receiving_efficiency_l3"
+    - "rb_vs_lb_red_zone_efficiency_l3"
+    - "rb_vs_lb_yards_per_carry_l5"
+    - "rb_vs_lb_broken_tackles_l5"
+    - "rb_vs_lb_receiving_efficiency_l5"
+    - "rb_vs_lb_red_zone_efficiency_l5"
+    - "rb_vs_lb_yards_per_carry_l6"
+    - "rb_vs_lb_broken_tackles_l6"
+    - "rb_vs_lb_receiving_efficiency_l6"
+    - "rb_vs_lb_red_zone_efficiency_l6"
+    - "rb_vs_lb_yards_per_carry_ewma"
+    - "rb_vs_lb_broken_tackles_ewma"
+    - "rb_vs_lb_receiving_efficiency_ewma"
+    - "rb_vs_lb_red_zone_efficiency_ewma"
+  
+  # Position group matchups
+  position_groups:
+    - "wr_corps_vs_cb_corps_target_distribution_l3"
+    - "wr_corps_vs_cb_corps_separation_l3"
+    - "wr_corps_vs_cb_corps_red_zone_efficiency_l3"
+    - "wr_corps_vs_cb_corps_deep_ball_efficiency_l3"
+    - "ol_vs_dl_trenches_pass_protection_l3"
+    - "ol_vs_dl_trenches_run_blocking_l3"
+    - "ol_vs_dl_trenches_pressure_consistency_l3"
+    - "ol_vs_dl_trenches_sack_prevention_l3"
+    - "qb_vs_secondary_deep_ball_accuracy_l3"
+    - "qb_vs_secondary_pressure_handling_l3"
+    - "qb_vs_secondary_turnover_avoidance_l3"
+    - "qb_vs_secondary_red_zone_efficiency_l3"
+  
+  # Situational matchups
+  situational:
+    - "red_zone_wr_vs_cb_efficiency_l3"
+    - "red_zone_ol_vs_dl_efficiency_l3"
+    - "red_zone_qb_vs_secondary_efficiency_l3"
+    - "red_zone_rb_vs_lb_efficiency_l3"
+    - "third_down_conversion_rate_l3"
+    - "third_down_pressure_handling_l3"
+    - "third_down_coverage_efficiency_l3"
+    - "third_down_play_calling_efficiency_l3"
+    - "two_minute_offense_efficiency_l3"
+    - "two_minute_defense_efficiency_l3"
+    - "two_minute_tempo_advantage_l3"
+    - "two_minute_clutch_performance_l3"
+  
+  # Historical matchups
+  historical:
+    - "h2h_recent_meetings_l3"
+    - "h2h_coaching_adjustments_l3"
+    - "h2h_trend_analysis_l3"
+    - "h2h_upset_frequency_l3"
+    - "division_rivalry_intensity_l3"
+    - "division_familiarity_advantage_l3"
+    - "division_home_field_advantage_l3"
+    - "division_playoff_implications_l3"
+
+# Matchup calculation parameters
+matchup_params:
+  # Rolling windows
+  windows:
+    l3: 3
+    l5: 5
+    l6: 6
+    ewma:
+      alpha: 0.8
+      min_periods: 2
+  
+  # Position mapping
+  position_mapping:
+    offense:
+      QB: ["QB"]
+      WR: ["WR", "WR1", "WR2", "WR3"]
+      RB: ["RB", "RB1", "RB2"]
+      TE: ["TE", "TE1", "TE2"]
+      OL: ["OT", "OG", "C", "LT", "RT", "LG", "RG"]
+    defense:
+      CB: ["CB", "CB1", "CB2", "CB3"]
+      S: ["S", "FS", "SS"]
+      LB: ["LB", "OLB", "ILB", "MLB"]
+      DL: ["DT", "DE", "NT", "DT1", "DT2", "DE1", "DE2"]
+  
+  # Coverage scheme detection
+  coverage_detection:
+    man_coverage_threshold: 0.7  # 70% of targets to top 2 WRs
+    zone_coverage_threshold: 0.4  # 40% of targets to top 2 WRs
+    blitz_threshold: 0.3  # 30% of plays with 5+ rushers
+  
+  # Matchup efficiency thresholds
+  efficiency_thresholds:
+    high_efficiency: 0.7
+    medium_efficiency: 0.5
+    low_efficiency: 0.3

@@ -20,6 +20,7 @@ from datetime import datetime
 
 from src.features.rolling import RollingFeatureCalculator
 from src.features.situational import SituationalFeatureCalculator
+from src.features.matchup import MatchupFeatureCalculator
 from src.data.readers import SchedulesReader
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,7 @@ class FeatureAssembler:
         self.config = self._load_config(config_path)
         self.rolling_calc = RollingFeatureCalculator(config_path)
         self.situational_calc = SituationalFeatureCalculator(config_path)
+        self.matchup_calc = MatchupFeatureCalculator(config_path)
         
         logger.info("Initialized FeatureAssembler")
     
@@ -134,6 +136,8 @@ class FeatureAssembler:
             
             # Get situational features
             situational_features = self.situational_calc.calculate_situational_features(season, week)
+            # Get matchup features (thin-slice MVP)
+            matchup_features = self.matchup_calc.calculate_matchup_features(season, week)
             
             # Combine features for both teams
             game_features = []
@@ -144,20 +148,22 @@ class FeatureAssembler:
             # Home team features
             home_rolling = rolling_features[rolling_features['team'] == home_team]
             home_situational = situational_features[situational_features['team'] == home_team]
+            home_matchup = matchup_features[matchup_features['team'] == home_team]
             
-            if not home_rolling.empty and not home_situational.empty:
+            if not home_rolling.empty and not home_situational.empty and not home_matchup.empty:
                 home_features = self._combine_team_features(
-                    home_rolling.iloc[0], home_situational.iloc[0], game, 'home'
+                    home_rolling.iloc[0], home_situational.iloc[0], home_matchup.iloc[0], game, 'home'
                 )
                 game_features.append(home_features)
             
             # Away team features
             away_rolling = rolling_features[rolling_features['team'] == away_team]
             away_situational = situational_features[situational_features['team'] == away_team]
+            away_matchup = matchup_features[matchup_features['team'] == away_team]
             
-            if not away_rolling.empty and not away_situational.empty:
+            if not away_rolling.empty and not away_situational.empty and not away_matchup.empty:
                 away_features = self._combine_team_features(
-                    away_rolling.iloc[0], away_situational.iloc[0], game, 'away'
+                    away_rolling.iloc[0], away_situational.iloc[0], away_matchup.iloc[0], game, 'away'
                 )
                 game_features.append(away_features)
             
@@ -167,7 +173,7 @@ class FeatureAssembler:
             logger.warning(f"Failed to assemble features for game {game['game_id']}: {e}")
             return None
     
-    def _combine_team_features(self, rolling_data: pd.Series, situational_data: pd.Series, 
+    def _combine_team_features(self, rolling_data: pd.Series, situational_data: pd.Series, matchup_data: pd.Series,
                              game_data: pd.Series, team_type: str) -> Dict[str, Any]:
         """Combine rolling and situational features for a team."""
         # Start with basic game info
@@ -177,7 +183,7 @@ class FeatureAssembler:
             'game_id': game_data['game_id'],
             'team': rolling_data['team'],
             'opponent': situational_data['opponent'],
-            'home': situational_data['home'],
+            'home': situational_data.get('situational_home', team_type == 'home'),
             'team_type': team_type
         }
         
@@ -200,6 +206,11 @@ class FeatureAssembler:
         features['home_score'] = game_data.get('home_score', None)
         features['away_score'] = game_data.get('away_score', None)
         features['result'] = game_data.get('result', None)
+
+        # Add matchup features (prefix with matchup_)
+        matchup_cols = [col for col in matchup_data.index if col not in ['season', 'week', 'team']]
+        for col in matchup_cols:
+            features[f'matchup_{col}'] = matchup_data[col]
         
         return features
     
